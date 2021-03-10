@@ -152,16 +152,16 @@ y, z, x = Tuple()
 
 describe("traverseDestructure()", () => {
   it("*y = z is invalid (starred not in destructure)", () => {
-    expect(() => parse("*y = z")).to.throw();
+    expect(() => parse("*y = z", 1)).to.throw();
   });
 
   it("parses non-destructred assignment", () => {
-    const assign = parse("y = z").stmts[0];
+    const assign = parse("y = z", 1).stmts[0];
     expect(assign).to.eql({
       a: {
         col: 0,
         length: 5,
-        line: 1,
+        line: 1,fileId: 1,
       },
       destruct: {
         isDestructured: false,
@@ -173,7 +173,7 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 0,
                 length: 1,
-                line: 1,
+                line: 1,fileId: 1,
               },
               name: "y",
               tag: "id",
@@ -183,7 +183,7 @@ describe("traverseDestructure()", () => {
         valueType: {
           col: 0,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
       },
       tag: "assignment",
@@ -191,7 +191,7 @@ describe("traverseDestructure()", () => {
         a: {
           col: 4,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
         name: "z",
         tag: "id",
@@ -200,12 +200,12 @@ describe("traverseDestructure()", () => {
   });
 
   it("*y, = z is valid (starred in destructure)", () => {
-    const assign = parse("*y, = z").stmts[0];
+    const assign = parse("*y, = z", 1).stmts[0];
     expect(assign).to.eql({
       a: {
         col: 0,
         length: 7,
-        line: 1,
+        line: 1,fileId: 1,
       },
       destruct: {
         isDestructured: true,
@@ -217,7 +217,7 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 1,
                 length: 1,
-                line: 1,
+                line: 1,fileId: 1,
               },
               name: "y",
               tag: "id",
@@ -227,7 +227,7 @@ describe("traverseDestructure()", () => {
         valueType: {
           col: 0,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
       },
       tag: "assignment",
@@ -235,7 +235,7 @@ describe("traverseDestructure()", () => {
         a: {
           col: 6,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
         name: "z",
         tag: "id",
@@ -244,12 +244,12 @@ describe("traverseDestructure()", () => {
   });
 
   it("allows fields in assignment", () => {
-    const assign = parse("c.x, y = z").stmts[0];
+    const assign = parse("c.x, y = z", 1).stmts[0];
     expect(assign).to.eql({
       a: {
         col: 0,
         length: 10,
-        line: 1,
+        line: 1,fileId: 1,
       },
       destruct: {
         isDestructured: true,
@@ -261,7 +261,7 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 0,
                 length: 3,
-                line: 1,
+                line: 1,fileId: 1,
               },
               tag: "lookup",
               field: "x",
@@ -269,7 +269,7 @@ describe("traverseDestructure()", () => {
                 a: {
                   col: 0,
                   length: 1,
-                  line: 1,
+                  line: 1,fileId: 1,
                 },
                 name: "c",
                 tag: "id",
@@ -283,7 +283,7 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 5,
                 length: 1,
-                line: 1,
+                line: 1,fileId: 1,
               },
               name: "y",
               tag: "id",
@@ -293,7 +293,7 @@ describe("traverseDestructure()", () => {
         valueType: {
           col: 0,
           length: 3,
-          line: 1,
+          line: 1,fileId: 1,
         },
       },
       tag: "assignment",
@@ -301,7 +301,7 @@ describe("traverseDestructure()", () => {
         a: {
           col: 9,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
         name: "z",
         tag: "id",
@@ -310,12 +310,12 @@ describe("traverseDestructure()", () => {
   });
 
   it("allows fields in assignment2", () => {
-    const assign = parse("d[2], y = z").stmts[0];
+    const assign = parse("d[2], y = z", 1).stmts[0];
     expect(assign).to.eql({
       a: {
         col: 0,
         length: 11,
-        line: 1,
+        line: 1,fileId: 1,
       },
       destruct: {
         isDestructured: true,
@@ -327,14 +327,14 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 0,
                 length: 4,
-                line: 1,
+                line: 1,fileId: 1,
               },
               tag: "bracket-lookup",
               obj: {
                 a: {
                   col: 0,
                   length: 1,
-                  line: 1,
+                  line: 1,fileId: 1,
                 },
                 tag: "id",
                 name: "d",
@@ -343,7 +343,7 @@ describe("traverseDestructure()", () => {
                 a: {
                   col: 2,
                   length: 1,
-                  line: 1,
+                  line: 1,fileId: 1,
                 },
                 tag: "literal",
                 value: { tag: "num", value: 2n },
@@ -357,7 +357,7 @@ describe("traverseDestructure()", () => {
               a: {
                 col: 6,
                 length: 1,
-                line: 1,
+                line: 1,fileId: 1,
               },
               name: "y",
               tag: "id",
@@ -367,7 +367,7 @@ describe("traverseDestructure()", () => {
         valueType: {
           col: 0,
           length: 4,
-          line: 1,
+          line: 1,fileId: 1,
         },
       },
       tag: "assignment",
@@ -375,7 +375,7 @@ describe("traverseDestructure()", () => {
         a: {
           col: 10,
           length: 1,
-          line: 1,
+          line: 1,fileId: 1,
         },
         name: "z",
         tag: "id",

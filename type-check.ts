@@ -577,7 +577,7 @@ function tcDestructure(
     let starOffset = 0;
     let tTargets: AssignTarget<[Type, Location]>[] = destruct.targets.map((target, i, targets) => {
       if (i >= types.length)
-        throw new BaseException.ValueError(
+        throw new BaseException.ValueError(undefined, undefined,
           `Not enough values to unpack (expected at least ${i}, got ${types.length})`
         );
       if (target.starred) {
@@ -589,7 +589,7 @@ function tcDestructure(
     });
 
     if (types.length > destruct.targets.length + starOffset)
-      throw new BaseException.ValueError(
+      throw new BaseException.ValueError(undefined, undefined,
         `Too many values to unpack (expected ${destruct.targets.length}, got ${types.length})`
       );
 

@@ -1,10 +1,11 @@
 import { run, Config } from "./runner";
 import { GlobalEnv, libraryFuns } from "./compiler";
 import { tc, defaultTypeEnv, GlobalTypeEnv } from "./type-check";
-import { Value, Type, Literal } from "./ast";
+import { Value, Type, Literal, Location } from "./ast";
 import { parse } from "./parser";
 import { NUM, STRING, BOOL, NONE, PyValue } from "./utils";
 import { bignumfunctions } from "./bignumfunctions";
+import { StackManager, importStackManager } from "./stack"
 
 interface REPL {
   run(source: string): Promise<any>;
@@ -16,8 +17,13 @@ export class BasicREPL {
   functions: string;
   importObject: any;
   memory: any;
+  stackManager: StackManager;
   constructor(importObject: any) {
     this.importObject = importObject;
+
+    this.stackManager = new StackManager();
+    importStackManager(importObject, this.stackManager)
+
     if (!importObject.js) {
       const memory = new WebAssembly.Memory({ initial: 2000, maximum: 2000 });
       const view = new Int32Array(memory.buffer);
@@ -79,11 +85,14 @@ export class BasicREPL {
       env: this.currentEnv,
       typeEnv: this.currentTypeEnv,
       functions: this.functions,
+      stackManager: this.stackManager,
     };
-    const [result, newEnv, newTypeEnv, newFunctions] = await run(source, config);
+    
+    const [result, newEnv, newTypeEnv, newFunctions, newStackManager] = await run(source, config);
     this.currentEnv = newEnv;
     this.currentTypeEnv = newTypeEnv;
     this.functions += newFunctions;
+    this.stackManager = newStackManager;
     return result;
   }
   async tc(source: string): Promise<Type> {
@@ -92,8 +101,9 @@ export class BasicREPL {
       env: this.currentEnv,
       typeEnv: this.currentTypeEnv,
       functions: this.functions,
+      stackManager: this.stackManager,
     };
-    const parsed = parse(source);
+    const parsed = parse(source, config.stackManager.source.length);
     const [result, _] = await tc(this.currentTypeEnv, parsed);
     return result.a[0];
   }

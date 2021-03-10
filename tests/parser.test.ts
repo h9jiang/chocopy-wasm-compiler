@@ -29,7 +29,7 @@ describe("traverseExpr(c, s) function", () => {
     // go to expression
     cursor.firstChild();
 
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     // Note: we have to use deep equality when comparing objects
     expect(parsedExpr).to.deep.equal({
@@ -37,6 +37,7 @@ describe("traverseExpr(c, s) function", () => {
         col: 0,
         length: 3,
         line: 1,
+        fileId: 1,
       },
       tag: "literal",
       value: {
@@ -52,13 +53,14 @@ describe("traverseExpr(c, s) function", () => {
     const cursor = parser.parse(source).cursor();
     cursor.firstChild();
     cursor.firstChild();
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     expect(parsedExpr).to.deep.equal({
       a: {
         col: 0,
         length: 4,
         line: 1,
+        fileId: 1,
       },
       tag: "literal",
       value: { tag: "none" },
@@ -70,13 +72,14 @@ describe("traverseExpr(c, s) function", () => {
     const cursor = parser.parse(source).cursor();
     cursor.firstChild();
     cursor.firstChild();
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     expect(parsedExpr).to.deep.equal({
       a: {
         col: 0,
         length: 8,
         line: 1,
+        fileId: 1,
       },
       tag: "uniop",
       op: UniOp.Not,
@@ -85,6 +88,7 @@ describe("traverseExpr(c, s) function", () => {
           col: 4,
           length: 4,
           line: 1,
+          fileId: 1,
         },
         tag: "literal",
         value: { tag: "bool", value: true },
@@ -97,13 +101,14 @@ describe("traverseExpr(c, s) function", () => {
     const cursor = parser.parse(source).cursor();
     cursor.firstChild();
     cursor.firstChild();
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     expect(parsedExpr).to.deep.equal({
       a: {
         col: 0,
         length: 5,
         line: 1,
+        fileId: 1,
       },
       tag: "binop",
       op: BinOp.Minus,
@@ -112,6 +117,7 @@ describe("traverseExpr(c, s) function", () => {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         tag: "literal",
         value: { tag: "num", value: BigInt(7) },
@@ -121,6 +127,7 @@ describe("traverseExpr(c, s) function", () => {
           col: 4,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         tag: "literal",
         value: { tag: "num", value: BigInt(3) },
@@ -133,7 +140,7 @@ describe("traverseExpr(c, s) function", () => {
     const cursor = parser.parse(source).cursor();
     cursor.firstChild();
     cursor.firstChild();
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     expect(parsedExpr).to.deep.equal({
       tag: "list-expr",
@@ -141,6 +148,7 @@ describe("traverseExpr(c, s) function", () => {
         col: 0,
         length: 9,
         line: 1,
+        fileId: 1,
       },
       contents: [
         {
@@ -148,6 +156,7 @@ describe("traverseExpr(c, s) function", () => {
             col: 1,
             length: 1,
             line: 1,
+            fileId: 1,
           },
           tag: "literal",
           value: { tag: "num", value: BigInt(1) },
@@ -157,6 +166,7 @@ describe("traverseExpr(c, s) function", () => {
             col: 4,
             length: 1,
             line: 1,
+            fileId: 1,
           },
           tag: "literal",
           value: { tag: "num", value: BigInt(2) },
@@ -166,6 +176,7 @@ describe("traverseExpr(c, s) function", () => {
             col: 7,
             length: 1,
             line: 1,
+            fileId: 1,
           },
           tag: "literal",
           value: { tag: "num", value: BigInt(3) },
@@ -180,13 +191,14 @@ describe("traverseExpr(c, s) function", () => {
     const cursor = parser.parse(source).cursor();
     cursor.firstChild();
     cursor.firstChild();
-    const parsedExpr = traverseExpr(cursor, source);
+    const parsedExpr = traverseExpr(cursor, source, 1);
 
     expect(parsedExpr).to.deep.equal({
       a: {
         col: 0,
         length: 8,
         line: 1,
+        fileId: 1,
       },
       tag: "bracket-lookup",
       obj: {
@@ -194,6 +206,7 @@ describe("traverseExpr(c, s) function", () => {
           col: 0,
           length: 5,
           line: 1,
+          fileId: 1,
         },
         tag: "id",
         name: "items",
@@ -203,6 +216,7 @@ describe("traverseExpr(c, s) function", () => {
           col: 6,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         tag: "literal",
         value: { tag: "num", value: BigInt(6) },
@@ -217,7 +231,7 @@ describe("traverseExpr(c, s) function", () => {
 //     const source = "items[2] = True";
 //     const cursor = parser.parse(source).cursor();
 //     cursor.firstChild(); //go to statement
-//     const parsedStmt = traverseStmt(cursor, source);
+//     const parsedStmt = traverseStmt(cursor, source, 1);
 
 //     expect(parsedStmt).to.deep.equal({
 //       tag: "bracket-assign",
@@ -245,13 +259,14 @@ export type Program<A> = {
 */
 describe("parse(source) function", () => {
   it("parse a number", () => {
-    const parsed = parse("987");
+    const parsed = parse("987", 1);
     expect(parsed.stmts).to.deep.equal([
       {
         a: {
           col: 0,
           length: 3,
           line: 1,
+          fileId: 1,
         },
         tag: "expr",
         expr: {
@@ -259,6 +274,7 @@ describe("parse(source) function", () => {
             col: 0,
             length: 3,
             line: 1,
+            fileId: 1,
           },
           tag: "literal",
           value: { tag: "num", value: BigInt(987) },
@@ -270,13 +286,14 @@ describe("parse(source) function", () => {
 
 describe("parse(source) function", () => {
   it("parse a Callable[[], None] type initialization", () => {
-    const parsed = parse("f:Callable[[], None] = None");
+    const parsed = parse("f:Callable[[], None] = None", 1);
     expect(parsed.inits).to.deep.equal([
       {
         a: {
           col: 0,
           length: 27,
           line: 1,
+          fileId: 1,
         },
         name: "f",
         type: {
@@ -291,13 +308,14 @@ describe("parse(source) function", () => {
 
   // TODO: add additional tests here to ensure parse works as expected
   it("parse a Callable[[int], bool] type initialization", () => {
-    const parsed = parse("f:Callable[[int], bool] = None");
+    const parsed = parse("f:Callable[[int], bool] = None", 1);
     expect(parsed.inits).to.deep.equal([
       {
         a: {
           col: 0,
           length: 30,
           line: 1,
+          fileId: 1,
         },
         name: "f",
         type: {
@@ -311,7 +329,7 @@ describe("parse(source) function", () => {
   });
 
   it("parse an empty dict expression", () => {
-    const parsed = parse("d = {}");
+    const parsed = parse("d = {}", 1);
     expect(parsed.stmts).to.deep.equal([
       singleVarAssignment(
         "d",
@@ -320,6 +338,7 @@ describe("parse(source) function", () => {
             col: 4,
             length: 2,
             line: 1,
+            fileId: 1,
           },
           tag: "dict",
           entries: [],
@@ -328,23 +347,26 @@ describe("parse(source) function", () => {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 6,
           line: 1,
+          fileId: 1,
         }
       ),
     ]);
   });
 
   it("parse a dict expression", () => {
-    const parsed = parse("d = {2:True}");
+    const parsed = parse("d = {2:True}",1);
     expect(parsed.stmts).to.deep.equal([
       singleVarAssignment(
         "d",
@@ -353,6 +375,7 @@ describe("parse(source) function", () => {
             col: 4,
             length: 8,
             line: 1,
+            fileId: 1,
           },
           tag: "dict",
           entries: [
@@ -362,6 +385,7 @@ describe("parse(source) function", () => {
                   col: 5,
                   length: 1,
                   line: 1,
+                  fileId: 1,
                 },
                 tag: "literal",
                 value: { tag: "num", value: 2n },
@@ -371,6 +395,7 @@ describe("parse(source) function", () => {
                   col: 7,
                   length: 4,
                   line: 1,
+                  fileId: 1,
                 },
                 tag: "literal",
                 value: { tag: "bool", value: true },
@@ -382,23 +407,26 @@ describe("parse(source) function", () => {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 12,
           line: 1,
+          fileId: 1,
         }
       ),
     ]);
   });
 
   it("parse a nested dict expression", () => {
-    const parsed = parse("d = {2:{4:True}}");
+    const parsed = parse("d = {2:{4:True}}", 1);
     expect(parsed.stmts).to.deep.equal([
       singleVarAssignment(
         "d",
@@ -407,6 +435,7 @@ describe("parse(source) function", () => {
             col: 4,
             length: 12,
             line: 1,
+            fileId: 1,
           },
           tag: "dict",
           entries: [
@@ -416,6 +445,7 @@ describe("parse(source) function", () => {
                   col: 5,
                   length: 1,
                   line: 1,
+                  fileId: 1,
                 },
                 tag: "literal",
                 value: { tag: "num", value: 2n },
@@ -426,6 +456,7 @@ describe("parse(source) function", () => {
                   col: 7,
                   length: 8,
                   line: 1,
+                  fileId: 1,
                 },
                 entries: [
                   [
@@ -434,6 +465,7 @@ describe("parse(source) function", () => {
                         col: 8,
                         length: 1,
                         line: 1,
+                        fileId: 1,
                       },
                       tag: "literal",
                       value: { tag: "num", value: 4n },
@@ -443,6 +475,7 @@ describe("parse(source) function", () => {
                         col: 10,
                         length: 4,
                         line: 1,
+                        fileId: 1,
                       },
                       tag: "literal",
                       value: { tag: "bool", value: true },
@@ -457,29 +490,33 @@ describe("parse(source) function", () => {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 1,
           line: 1,
+          fileId: 1,
         },
         {
           col: 0,
           length: 16,
           line: 1,
+          fileId: 1,
         }
       ),
     ]);
   });
 
   it("parse a Callable[[int, Callable[[int], bool]], Foo] type initialization", () => {
-    const parsed = parse("f:Callable[[int, Callable[[int], bool]], Foo] = None");
+    const parsed = parse("f:Callable[[int, Callable[[int], bool]], Foo] = None", 1);
     expect(parsed.inits).to.deep.equal([
       {
         a: {
           col: 0,
           length: 52,
           line: 1,
+          fileId: 1,
         },
         name: "f",
         type: {
@@ -503,13 +540,14 @@ describe("parse(source) function", () => {
   });
 
   it("parse a Callable[[int, bool], Foo] type initialization", () => {
-    const parsed = parse("f:Callable[[int, bool], Foo] = None");
+    const parsed = parse("f:Callable[[int, bool], Foo] = None", 1);
     expect(parsed.inits).to.deep.equal([
       {
         a: {
           col: 0,
           length: 35,
           line: 1,
+          fileId: 1,
         },
         name: "f",
         type: {
@@ -531,13 +569,14 @@ describe("parse(source) function", () => {
                 def g() -> int:
                     return x
                 return g()
-        `);
+        `, 1);
     expect(parsed.funs).to.deep.equal([
       {
         a: {
           col: 13,
           length: 110,
           line: 2,
+          fileId: 1,
         },
         name: "f",
         parameters: [{ name: "x", type: { tag: "number" } }],
@@ -550,6 +589,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 45,
               line: 3,
+              fileId: 1,
             },
             name: "g",
             parameters: [],
@@ -563,6 +603,7 @@ describe("parse(source) function", () => {
                   col: 21,
                   length: 8,
                   line: 4,
+                  fileId: 1,
                 },
                 tag: "return",
                 value: {
@@ -570,6 +611,7 @@ describe("parse(source) function", () => {
                     col: 28,
                     length: 1,
                     line: 4,
+                    fileId: 1,
                   },
                   tag: "id",
                   name: "x",
@@ -584,6 +626,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 10,
               line: 5,
+              fileId: 1,
             },
             tag: "return",
             value: {
@@ -591,6 +634,7 @@ describe("parse(source) function", () => {
                 col: 24,
                 length: 3,
                 line: 5,
+                fileId: 1,
               },
               tag: "call_expr",
               name: {
@@ -598,6 +642,7 @@ describe("parse(source) function", () => {
                   col: 24,
                   length: 3,
                   line: 5,
+                  fileId: 1,
                 },
                 tag: "id",
                 name: "g",
@@ -619,13 +664,14 @@ describe("parse(source) function", () => {
                     nonlocal x
                     return True
                 return g
-        `);
+        `, 1);
     expect(parsed.funs).to.deep.equal([
       {
         a: {
           col: 13,
           length: 208,
           line: 2,
+          fileId: 1,
         },
         name: "f",
         parameters: [{ name: "x", type: { tag: "number" } }],
@@ -638,6 +684,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 34,
               line: 3,
+              fileId: 1,
             },
             name: "k",
             parameters: [],
@@ -651,6 +698,7 @@ describe("parse(source) function", () => {
                   col: 21,
                   length: 4,
                   line: 4,
+                  fileId: 1,
                 },
                 tag: "pass",
               },
@@ -661,6 +709,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 80,
               line: 5,
+              fileId: 1,
             },
             name: "g",
             parameters: [],
@@ -671,6 +720,7 @@ describe("parse(source) function", () => {
                   col: 21,
                   length: 10,
                   line: 6,
+                  fileId: 1,
                 },
                 tag: "nonlocal",
                 name: "x",
@@ -684,6 +734,7 @@ describe("parse(source) function", () => {
                   col: 21,
                   length: 11,
                   line: 7,
+                  fileId: 1,
                 },
                 tag: "return",
                 value: {
@@ -691,6 +742,7 @@ describe("parse(source) function", () => {
                     col: 28,
                     length: 4,
                     line: 7,
+                    fileId: 1,
                   },
                   tag: "literal",
                   value: { tag: "bool", value: true },
@@ -705,6 +757,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 8,
               line: 8,
+              fileId: 1,
             },
             tag: "return",
             value: {
@@ -712,6 +765,7 @@ describe("parse(source) function", () => {
                 col: 24,
                 length: 1,
                 line: 8,
+                fileId: 1,
               },
               tag: "id",
               name: "g",
@@ -723,13 +777,14 @@ describe("parse(source) function", () => {
   });
 
   it("parse a function call with callable return type", () => {
-    const parsed = parse(`id(f())(5)`);
+    const parsed = parse(`id(f())(5)`, 1);
     expect(parsed.stmts).to.deep.equal([
       {
         a: {
           col: 0,
           length: 10,
           line: 1,
+          fileId: 1,
         },
         tag: "expr",
         expr: {
@@ -737,6 +792,7 @@ describe("parse(source) function", () => {
             col: 0,
             length: 10,
             line: 1,
+            fileId: 1,
           },
           tag: "call_expr",
           name: {
@@ -744,6 +800,7 @@ describe("parse(source) function", () => {
               col: 0,
               length: 7,
               line: 1,
+              fileId: 1,
             },
             tag: "call_expr",
             name: {
@@ -751,6 +808,7 @@ describe("parse(source) function", () => {
                 col: 0,
                 length: 7,
                 line: 1,
+                fileId: 1,
               },
               tag: "id",
               name: "id",
@@ -761,6 +819,7 @@ describe("parse(source) function", () => {
                   col: 3,
                   length: 3,
                   line: 1,
+                  fileId: 1,
                 },
                 tag: "call_expr",
                 name: {
@@ -768,6 +827,7 @@ describe("parse(source) function", () => {
                     col: 3,
                     length: 3,
                     line: 1,
+                    fileId: 1,
                   },
                   tag: "id",
                   name: "f",
@@ -782,6 +842,7 @@ describe("parse(source) function", () => {
                 col: 8,
                 length: 1,
                 line: 1,
+                fileId: 1,
               },
               tag: "literal",
               value: { tag: "num", value: 5n },
@@ -793,13 +854,14 @@ describe("parse(source) function", () => {
   });
 
   it("parse a method call with callable return type", () => {
-    const parsed = parse(`a.id()(5)`);
+    const parsed = parse(`a.id()(5)`, 1);
     expect(parsed.stmts).to.deep.equal([
       {
         a: {
           col: 0,
           length: 9,
           line: 1,
+          fileId: 1,
         },
         tag: "expr",
         expr: {
@@ -809,6 +871,7 @@ describe("parse(source) function", () => {
               col: 0,
               length: 6,
               line: 1,
+              fileId: 1,
             },
             tag: "method-call",
             obj: {
@@ -816,6 +879,7 @@ describe("parse(source) function", () => {
                 col: 0,
                 length: 1,
                 line: 1,
+                fileId: 1,
               },
               tag: "id",
               name: "a",
@@ -827,6 +891,7 @@ describe("parse(source) function", () => {
             col: 0,
             length: 9,
             line: 1,
+            fileId: 1,
           },
           arguments: [
             {
@@ -834,6 +899,7 @@ describe("parse(source) function", () => {
                 col: 7,
                 length: 1,
                 line: 1,
+                fileId: 1,
               },
               tag: "literal",
               value: { tag: "num", value: 5n },
@@ -845,13 +911,14 @@ describe("parse(source) function", () => {
   });
 
   it("parse a lambda expression (no arg)", () => {
-    const parsed = parse(`lambda a : a + 10`);
+    const parsed = parse(`lambda a : a + 10`, 1);
     expect(parsed.stmts).to.deep.equal([
       {
         a: {
           col: 0,
           length: 17,
           line: 1,
+          fileId: 1,
         },
         tag: "expr",
         expr: {
@@ -859,6 +926,7 @@ describe("parse(source) function", () => {
             col: 0,
             length: 17,
             line: 1,
+            fileId: 1,
           },
           tag: "lambda",
           args: ["a"],
@@ -867,6 +935,7 @@ describe("parse(source) function", () => {
               col: 11,
               length: 6,
               line: 1,
+              fileId: 1,
             },
             tag: "binop",
             op: BinOp.Plus,
@@ -875,6 +944,7 @@ describe("parse(source) function", () => {
                 col: 11,
                 length: 1,
                 line: 1,
+                fileId: 1,
               },
               tag: "id",
               name: "a",
@@ -884,6 +954,7 @@ describe("parse(source) function", () => {
                 col: 15,
                 length: 2,
                 line: 1,
+                fileId: 1,
               },
               tag: "literal",
               value: { tag: "num", value: 10n },
@@ -895,13 +966,14 @@ describe("parse(source) function", () => {
   });
 
   it("parse a lambda expression (multiple arg)", () => {
-    const parsed = parse(`lambda a, b, c : 10`);
+    const parsed = parse(`lambda a, b, c : 10`, 1);
     expect(parsed.stmts).to.deep.equal([
       {
         a: {
           col: 0,
           length: 19,
           line: 1,
+          fileId: 1,
         },
         tag: "expr",
         expr: {
@@ -909,6 +981,7 @@ describe("parse(source) function", () => {
             col: 0,
             length: 19,
             line: 1,
+            fileId: 1,
           },
           tag: "lambda",
           args: ["a", "b", "c"],
@@ -917,6 +990,7 @@ describe("parse(source) function", () => {
               col: 17,
               length: 2,
               line: 1,
+              fileId: 1,
             },
             tag: "literal",
             value: { tag: "num", value: 10n },

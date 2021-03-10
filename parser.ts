@@ -22,7 +22,7 @@ import {
 import { NUM, BOOL, NONE, CLASS, isTagged, STRING, LIST } from "./utils";
 import * as BaseException from "./error";
 
-export function getSourcePos(c: TreeCursor, s: string): Location {
+export function getSourcePos(c: TreeCursor, s: string, fileId: number): Location {
   const substring = s.substring(0, c.node.from);
   const line = substring.split("\n").length;
   const prevContent = substring
@@ -34,11 +34,12 @@ export function getSourcePos(c: TreeCursor, s: string): Location {
     line: line,
     col: col,
     length: c.node.to - c.node.from,
+    fileId: fileId,
   };
 }
 
-export function traverseLiteral(c: TreeCursor, s: string): Literal {
-  var location: Location = getSourcePos(c, s);
+export function traverseLiteral(c: TreeCursor, s: string, fileId: number): Literal {
+  var location: Location = getSourcePos(c, s, fileId);
   switch (c.type.name) {
     case "Number":
       return {
@@ -66,8 +67,8 @@ export function traverseLiteral(c: TreeCursor, s: string): Literal {
   }
 }
 
-export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseExpr(c: TreeCursor, s: string, fileId: number): Expr<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   switch (c.type.name) {
     case "Number":
     case "String":
@@ -76,7 +77,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
       return {
         a: location,
         tag: "literal",
-        value: traverseLiteral(c, s),
+        value: traverseLiteral(c, s, fileId),
       };
     case "VariableName":
       return {
@@ -86,9 +87,9 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
       };
     case "CallExpression":
       c.firstChild();
-      const callExpr = traverseExpr(c, s);
+      const callExpr = traverseExpr(c, s, fileId);
       c.nextSibling(); // go to arglist
-      let args = traverseArguments(c, s);
+      let args = traverseArguments(c, s, fileId);
       c.parent(); // pop CallExpression
 
       if (callExpr.tag === "call_expr" || callExpr.tag === "method-call") {
@@ -150,7 +151,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
 
     case "BinaryExpression":
       c.firstChild(); // go to lhs
-      const lhsExpr = traverseExpr(c, s);
+      const lhsExpr = traverseExpr(c, s, fileId);
       c.nextSibling(); // go to op
       var opStr = s.substring(c.from, c.to);
       var op;
@@ -205,7 +206,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
           );
       }
       c.nextSibling(); // go to rhs
-      const rhsExpr = traverseExpr(c, s);
+      const rhsExpr = traverseExpr(c, s, fileId);
       c.parent();
       return {
         a: location,
@@ -218,7 +219,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
     case "ParenthesizedExpression":
       c.firstChild(); // Focus on (
       c.nextSibling(); // Focus on inside
-      var expr = traverseExpr(c, s);
+      var expr = traverseExpr(c, s, fileId);
       c.parent();
       return expr;
     case "UnaryExpression":
@@ -240,7 +241,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
           );
       }
       c.nextSibling(); // go to expr
-      var expr = traverseExpr(c, s);
+      var expr = traverseExpr(c, s, fileId);
       c.parent();
       return {
         a: location,
@@ -250,7 +251,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
       };
     case "MemberExpression":
       c.firstChild(); // Focus on object
-      var objExpr = traverseExpr(c, s);
+      var objExpr = traverseExpr(c, s, fileId);
       // c.nextSibling(); // Focus on .
       // const memberChar = s.substring(c.from, c.to);
       // //Check if "." or "["
@@ -266,7 +267,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
       // } else if (memberChar === "[") {
       //   c.nextSibling(); // Focus on property
       //   //Parse Expr used as index
-      //   var propExpr = traverseExpr(c, s);
+      //   var propExpr = traverseExpr(c, s, fileId);
       //   c.parent();
       //   return {
       //     tag: "bracket-lookup",
@@ -317,7 +318,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
             "Too many arguments to process inside bracket"
           );
         if (sliced_list[0] != "") {
-          start_index = traverseExpr(c, s);
+          start_index = traverseExpr(c, s, fileId);
           console.log("First case " + s.substring(c.from, c.to));
           if (sliced_list.length == 1) {
             //end_index = start_index;
@@ -329,13 +330,13 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
         }
         if (c.nextSibling())
           if (sliced_list[1] != "") {
-            end_index = traverseExpr(c, s);
+            end_index = traverseExpr(c, s, fileId);
             console.log("Second case " + s.substring(c.from, c.to));
             c.nextSibling();
           }
         if (c.nextSibling())
           if (sliced_list[2] != "") {
-            stride_value = traverseExpr(c, s);
+            stride_value = traverseExpr(c, s, fileId);
             console.log("Third case " + s.substring(c.from, c.to));
             c.nextSibling();
           }
@@ -371,7 +372,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
       c.firstChild();
       c.nextSibling();
       while (s.substring(c.from, c.to).trim() !== "]") {
-        listExpr.push(traverseExpr(c, s));
+        listExpr.push(traverseExpr(c, s, fileId));
         c.nextSibling(); // Focuses on either "," or ")"
         c.nextSibling(); // Focuses on a VariableName
       }
@@ -391,10 +392,10 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
           // check for empty dict
           break;
         }
-        let key = traverseExpr(c, s);
+        let key = traverseExpr(c, s, fileId);
         c.nextSibling(); // Focus on :
         c.nextSibling(); // Focus on Value
-        let value = traverseExpr(c, s);
+        let value = traverseExpr(c, s, fileId);
         keyValuePairs.push([key, value]);
         c.nextSibling(); // Focus on } or ,
       }
@@ -423,7 +424,7 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
 
         c.nextSibling(); // go to :
         c.nextSibling(); // go to expression
-        const ret = traverseExpr(c, s);
+        const ret = traverseExpr(c, s, fileId);
         c.parent();
         return { a: location, tag: "lambda", args: lambdaArgs, ret };
       } else {
@@ -439,12 +440,12 @@ export function traverseExpr(c: TreeCursor, s: string): Expr<Location> {
   }
 }
 
-export function traverseArguments(c: TreeCursor, s: string): Array<Expr<Location>> {
+export function traverseArguments(c: TreeCursor, s: string, fileId: number): Array<Expr<Location>> {
   c.firstChild(); // Focuses on open paren
   const args = [];
   c.nextSibling();
   while (c.type.name !== ")") {
-    let expr = traverseExpr(c, s);
+    let expr = traverseExpr(c, s, fileId);
     args.push(expr);
     c.nextSibling(); // Focuses on either "," or ")"
     c.nextSibling(); // Focuses on a VariableName
@@ -454,8 +455,8 @@ export function traverseArguments(c: TreeCursor, s: string): Array<Expr<Location
 }
 
 // Traverse the next target of an assignment and return it
-function traverseAssignment(c: TreeCursor, s: string): AssignTarget<Location> {
-  let location: Location = getSourcePos(c, s);
+function traverseAssignment(c: TreeCursor, s: string, fileId: number): AssignTarget<Location> {
+  let location: Location = getSourcePos(c, s, fileId);
   let target = null;
   let starred = false;
   if (c.name === "*") {
@@ -464,7 +465,7 @@ function traverseAssignment(c: TreeCursor, s: string): AssignTarget<Location> {
     c.nextSibling();
   }
   try {
-    target = traverseExpr(c, s);
+    target = traverseExpr(c, s, fileId);
   } catch (e) {
     throw new BaseException.CompileError(
       location,
@@ -486,10 +487,10 @@ function traverseAssignment(c: TreeCursor, s: string): AssignTarget<Location> {
 }
 
 // Traverse the lhs of assign operations and return the assignment targets
-function traverseDestructure(c: TreeCursor, s: string): Destructure<Location> {
+function traverseDestructure(c: TreeCursor, s: string, fileId: number): Destructure<Location> {
   // TODO: Actually support destructured assignment
-  var location: Location = getSourcePos(c, s);
-  const targets: AssignTarget<Location>[] = [traverseAssignment(c, s)]; // We need to traverse initial assign target
+  var location: Location = getSourcePos(c, s, fileId);
+  const targets: AssignTarget<Location>[] = [traverseAssignment(c, s, fileId)]; // We need to traverse initial assign target
   c.nextSibling();
   let isSimple = true;
   let haveStarredTarget = targets[0].starred;
@@ -500,7 +501,7 @@ function traverseDestructure(c: TreeCursor, s: string): Destructure<Location> {
     if (c.name === "AssignOp")
       // Assignment list ends with comma, e.g. x, y, = (1, 2)
       break;
-    let target = traverseAssignment(c, s);
+    let target = traverseAssignment(c, s, fileId);
     if (target.starred) {
       if (haveStarredTarget)
         throw new BaseException.CompileError(
@@ -527,8 +528,8 @@ function traverseDestructure(c: TreeCursor, s: string): Destructure<Location> {
   };
 }
 
-export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseStmt(c: TreeCursor, s: string, fileId: number): Stmt<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   switch (c.node.type.name) {
     case "ReturnStatement":
       c.firstChild(); // Focus return keyword
@@ -536,16 +537,16 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
       var value: Expr<Location>;
       if (c.nextSibling())
         // Focus expression
-        value = traverseExpr(c, s);
+        value = traverseExpr(c, s, fileId);
       else value = { a: location, tag: "literal", value: { tag: "none" } };
       c.parent();
       return { tag: "return", value, a: location };
     case "AssignStatement":
       c.firstChild(); // go to name
-      const destruct = traverseDestructure(c, s);
+      const destruct = traverseDestructure(c, s, fileId);
       c.nextSibling(); // go to equals
       c.nextSibling(); // go to value
-      var value = traverseExpr(c, s);
+      var value = traverseExpr(c, s, fileId);
       c.parent();
       // const target = destruct.targets[0].target;
 
@@ -600,7 +601,7 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
       };
     case "ExpressionStatement":
       c.firstChild();
-      const expr = traverseExpr(c, s);
+      const expr = traverseExpr(c, s, fileId);
       c.parent(); // pop going into stmt
       return { tag: "expr", expr: expr, a: location };
     // case "FunctionDefinition":
@@ -608,18 +609,18 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
     //   c.nextSibling(); // Focus on name of function
     //   var name = s.substring(c.from, c.to);
     //   c.nextSibling(); // Focus on ParamList
-    //   var parameters = traverseParameters(c, s)
+    //   var parameters = traverseParameters(c, s, fileId)
     //   c.nextSibling(); // Focus on Body or TypeDef
     //   let ret : Type = NONE;
     //   if(c.type.name === "TypeDef") {
     //     c.firstChild();
-    //     ret = traverseType(c, s);
+    //     ret = traverseType(c, s, fileId);
     //     c.parent();
     //   }
     //   c.firstChild();  // Focus on :
     //   var body = [];
     //   while(c.nextSibling()) {
-    //     body.push(traverseStmt(c, s));
+    //     body.push(traverseStmt(c, s, fileId));
     //   }
     // console.log("Before pop to body: ", c.type.name);
     //   c.parent();      // Pop to Body
@@ -632,14 +633,14 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
     case "IfStatement":
       c.firstChild(); // Focus on if
       c.nextSibling(); // Focus on cond
-      var cond = traverseExpr(c, s);
+      var cond = traverseExpr(c, s, fileId);
       // console.log("Cond:", cond);
       c.nextSibling(); // Focus on : thn
       c.firstChild(); // Focus on :
       var thn = [];
       while (c.nextSibling()) {
         // Focus on thn stmts
-        thn.push(traverseStmt(c, s));
+        thn.push(traverseStmt(c, s, fileId));
       }
       // console.log("Thn:", thn);
       c.parent();
@@ -657,7 +658,7 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
       var els = [];
       while (c.nextSibling()) {
         // Focus on els stmts
-        els.push(traverseStmt(c, s));
+        els.push(traverseStmt(c, s, fileId));
       }
       c.parent();
       c.parent();
@@ -671,13 +672,13 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
     case "WhileStatement":
       c.firstChild(); // Focus on while
       c.nextSibling(); // Focus on condition
-      var cond = traverseExpr(c, s);
+      var cond = traverseExpr(c, s, fileId);
       c.nextSibling(); // Focus on body
 
       var body = [];
       c.firstChild(); // Focus on :
       while (c.nextSibling()) {
-        body.push(traverseStmt(c, s));
+        body.push(traverseStmt(c, s, fileId));
       }
       c.parent();
       c.parent();
@@ -706,12 +707,12 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
         c.nextSibling(); // Focus on in
       }
       c.nextSibling(); // Focus on iterable expression
-      var iter = traverseExpr(c, s);
+      var iter = traverseExpr(c, s, fileId);
       c.nextSibling(); // Focus on body
       var body = [];
       c.firstChild(); // Focus on :
       while (c.nextSibling()) {
-        body.push(traverseStmt(c, s));
+        body.push(traverseStmt(c, s, fileId));
       }
       c.parent();
       c.parent();
@@ -733,13 +734,13 @@ export function traverseStmt(c: TreeCursor, s: string): Stmt<Location> {
   }
 }
 
-export function traverseBracketType(c: TreeCursor, s: string): Type {
+export function traverseBracketType(c: TreeCursor, s: string, fileId: number): Type {
   let bracketTypes = [];
-  var location = getSourcePos(c, s);
+  var location = getSourcePos(c, s, fileId);
   c.firstChild();
   while (c.nextSibling()) {
     if (s.substring(c.from, c.to) !== ",") {
-      bracketTypes.push(traverseType(c, s));
+      bracketTypes.push(traverseType(c, s, fileId));
     }
     c.nextSibling();
   }
@@ -757,9 +758,9 @@ export function traverseBracketType(c: TreeCursor, s: string): Type {
   }
 }
 
-export function traverseType(c: TreeCursor, s: string): Type {
+export function traverseType(c: TreeCursor, s: string, fileId: number): Type {
   let name = s.substring(c.from, c.to);
-  if (c.node.type.name === "ArrayExpression") return traverseBracketType(c, s);
+  if (c.node.type.name === "ArrayExpression") return traverseBracketType(c, s, fileId);
   switch (name) {
     case "int":
       return NUM;
@@ -769,16 +770,16 @@ export function traverseType(c: TreeCursor, s: string): Type {
       return BOOL;
     default:
       if (c.type.name === "MemberExpression") {
-        return traverseCallable(c, s);
+        return traverseCallable(c, s, fileId);
       } else {
         return CLASS(name);
       }
   }
 }
 
-export function traverseCallable(c: TreeCursor, s: string): Type {
+export function traverseCallable(c: TreeCursor, s: string, fileId: number): Type {
   c.firstChild(); // Focus on Callable
-  var location = getSourcePos(c, s);
+  var location = getSourcePos(c, s, fileId);
   const name = s.substring(c.from, c.to);
   if (name !== "Callable") {
     throw new BaseException.CompileError(location, "Invalid Callable");
@@ -795,7 +796,7 @@ export function traverseCallable(c: TreeCursor, s: string): Type {
       if (temp.type.name !== "VariableName" && temp.type.name !== "MemberExpression") {
         throw new BaseException.CompileError(location, "Invalid Callable arg type");
       }
-      args.push(traverseType(c, s));
+      args.push(traverseType(c, s, fileId));
       c.nextSibling(); // , or ]
       c.nextSibling(); // arg
     }
@@ -812,7 +813,7 @@ export function traverseCallable(c: TreeCursor, s: string): Type {
     if (tempname === "None") {
       c.nextSibling();
     } else {
-      ret = traverseType(c, s);
+      ret = traverseType(c, s, fileId);
       c.nextSibling();
     }
   }
@@ -827,7 +828,7 @@ export function traverseCallable(c: TreeCursor, s: string): Type {
   return { tag: "callable", args: params, ret };
 }
 
-export function traverseParameters(c: TreeCursor, s: string): Array<Parameter> {
+export function traverseParameters(c: TreeCursor, s: string, fileId: number): Array<Parameter> {
   var location: Location;
   c.firstChild(); // Focuses on open paren
   const parameters = [];
@@ -846,14 +847,14 @@ export function traverseParameters(c: TreeCursor, s: string): Array<Parameter> {
     }
     c.firstChild(); // Enter TypeDef
     c.nextSibling(); // Focuses on type itself
-    let typ = traverseType(c, s);
+    let typ = traverseType(c, s, fileId);
     c.parent();
     c.nextSibling(); // Move on to comma or ")" or "="
     nextTagName = c.type.name; // NOTE(daniel): copying joe's hack for now (what would be the proper way to avoid this?)
     if (nextTagName === "AssignOp") {
       traversedDefaultParam = true;
       c.nextSibling(); // Move on to default value
-      let val = traverseLiteral(c, s);
+      let val = traverseLiteral(c, s, fileId);
       parameters.push({ name, type: typ, value: val });
       c.nextSibling(); // Move on to comma
     } else {
@@ -868,8 +869,8 @@ export function traverseParameters(c: TreeCursor, s: string): Array<Parameter> {
   return parameters;
 }
 
-export function traverseVarInit(c: TreeCursor, s: string): VarInit<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseVarInit(c: TreeCursor, s: string, fileId: number): VarInit<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   c.firstChild(); // go to name
   var name = s.substring(c.from, c.to);
   c.nextSibling(); // go to : type
@@ -880,18 +881,18 @@ export function traverseVarInit(c: TreeCursor, s: string): VarInit<Location> {
   }
   c.firstChild(); // go to :
   c.nextSibling(); // go to type
-  const type = traverseType(c, s);
+  const type = traverseType(c, s, fileId);
   c.parent();
 
   c.nextSibling(); // go to =
   c.nextSibling(); // go to value
-  var value = traverseLiteral(c, s);
+  var value = traverseLiteral(c, s, fileId);
   c.parent();
   return { name, type, value, a: location };
 }
 
-export function traverseScope(c: TreeCursor, s: string): Scope<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseScope(c: TreeCursor, s: string, fileId: number): Scope<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   c.firstChild(); // go to scope
   var scope = s.substring(c.from, c.to);
   c.nextSibling(); // go to varname
@@ -908,18 +909,18 @@ export function traverseScope(c: TreeCursor, s: string): Scope<Location> {
   }
 }
 
-export function traverseFunDef(c: TreeCursor, s: string): FunDef<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseFunDef(c: TreeCursor, s: string, fileId: number): FunDef<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   c.firstChild(); // Focus on def
   c.nextSibling(); // Focus on name of function
   var name = s.substring(c.from, c.to);
   c.nextSibling(); // Focus on ParamList
-  var parameters = traverseParameters(c, s);
+  var parameters = traverseParameters(c, s, fileId);
   c.nextSibling(); // Focus on Body or TypeDef
   let ret: Type = NONE;
   if (c.type.name === "TypeDef") {
     c.firstChild();
-    ret = traverseType(c, s);
+    ret = traverseType(c, s, fileId);
     c.parent();
     c.nextSibling();
   }
@@ -932,12 +933,12 @@ export function traverseFunDef(c: TreeCursor, s: string): FunDef<Location> {
 
   var hasChild = c.nextSibling();
   while (hasChild) {
-    if (isVarInit(c, s)) {
-      inits.push(traverseVarInit(c, s));
+    if (isVarInit(c, s, fileId)) {
+      inits.push(traverseVarInit(c, s, fileId));
     } else if (isScope(c, s)) {
-      decls.push(traverseScope(c, s));
+      decls.push(traverseScope(c, s, fileId));
     } else if (isFunDef(c, s)) {
-      funs.push(traverseFunDef(c, s));
+      funs.push(traverseFunDef(c, s, fileId));
     } else {
       break;
     }
@@ -945,7 +946,7 @@ export function traverseFunDef(c: TreeCursor, s: string): FunDef<Location> {
   }
 
   while (hasChild) {
-    body.push(traverseStmt(c, s));
+    body.push(traverseStmt(c, s, fileId));
     hasChild = c.nextSibling();
   }
 
@@ -955,8 +956,8 @@ export function traverseFunDef(c: TreeCursor, s: string): FunDef<Location> {
   return { a: location, name, parameters, ret, inits, decls, funs, body };
 }
 
-export function traverseClass(c: TreeCursor, s: string): Class<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverseClass(c: TreeCursor, s: string, fileId: number): Class<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   const fields: Array<VarInit<Location>> = [];
   const methods: Array<FunDef<Location>> = [];
   c.firstChild();
@@ -967,10 +968,10 @@ export function traverseClass(c: TreeCursor, s: string): Class<Location> {
   c.firstChild(); // Focus colon
   while (c.nextSibling()) {
     // Focuses first field
-    if (isVarInit(c, s)) {
-      fields.push(traverseVarInit(c, s));
+    if (isVarInit(c, s, fileId)) {
+      fields.push(traverseVarInit(c, s, fileId));
     } else if (isFunDef(c, s)) {
-      methods.push(traverseFunDef(c, s));
+      methods.push(traverseFunDef(c, s, fileId));
     } else {
       throw new BaseException.CompileError(
         location,
@@ -1004,19 +1005,20 @@ export function traverseClass(c: TreeCursor, s: string): Class<Location> {
 
 export function traverseDefs(
   c: TreeCursor,
-  s: string
+  s: string, 
+  fileId: number
 ): [Array<VarInit<Location>>, Array<FunDef<Location>>, Array<Class<Location>>] {
   const inits: Array<VarInit<Location>> = [];
   const funs: Array<FunDef<Location>> = [];
   const classes: Array<Class<Location>> = [];
 
   while (true) {
-    if (isVarInit(c, s)) {
-      inits.push(traverseVarInit(c, s));
+    if (isVarInit(c, s, fileId)) {
+      inits.push(traverseVarInit(c, s, fileId));
     } else if (isFunDef(c, s)) {
-      funs.push(traverseFunDef(c, s));
+      funs.push(traverseFunDef(c, s, fileId));
     } else if (isClassDef(c, s)) {
-      classes.push(traverseClass(c, s));
+      classes.push(traverseClass(c, s, fileId));
     } else {
       return [inits, funs, classes];
     }
@@ -1024,7 +1026,7 @@ export function traverseDefs(
   }
 }
 
-export function isVarInit(c: TreeCursor, s: string): boolean {
+export function isVarInit(c: TreeCursor, s: string, fileId: number): boolean {
   if (c.type.name === "AssignStatement") {
     c.firstChild(); // Focus on lhs
     c.nextSibling(); // go to : type
@@ -1053,8 +1055,8 @@ export function isClassDef(c: TreeCursor, s: string): boolean {
   return c.type.name === "ClassDefinition";
 }
 
-export function traverse(c: TreeCursor, s: string): Program<Location> {
-  var location: Location = getSourcePos(c, s);
+export function traverse(c: TreeCursor, s: string, fileId: number): Program<Location> {
+  var location: Location = getSourcePos(c, s, fileId);
   switch (c.node.type.name) {
     case "Script":
       const inits: Array<VarInit<Location>> = [];
@@ -1064,12 +1066,12 @@ export function traverse(c: TreeCursor, s: string): Program<Location> {
       var hasChild = c.firstChild();
 
       while (hasChild) {
-        if (isVarInit(c, s)) {
-          inits.push(traverseVarInit(c, s));
+        if (isVarInit(c, s, fileId)) {
+          inits.push(traverseVarInit(c, s, fileId));
         } else if (isFunDef(c, s)) {
-          funs.push(traverseFunDef(c, s));
+          funs.push(traverseFunDef(c, s, fileId));
         } else if (isClassDef(c, s)) {
-          classes.push(traverseClass(c, s));
+          classes.push(traverseClass(c, s, fileId));
         } else {
           break;
         }
@@ -1077,7 +1079,7 @@ export function traverse(c: TreeCursor, s: string): Program<Location> {
       }
 
       while (hasChild) {
-        stmts.push(traverseStmt(c, s));
+        stmts.push(traverseStmt(c, s, fileId));
         hasChild = c.nextSibling();
       }
       c.parent();
@@ -1091,7 +1093,7 @@ export function traverse(c: TreeCursor, s: string): Program<Location> {
       );
   }
 }
-export function parse(source: string): Program<Location> {
+export function parse(source: string, fileId: number): Program<Location> {
   const t = parser.parse(source);
-  return traverse(t.cursor(), source);
+  return traverse(t.cursor(), source, fileId);
 }

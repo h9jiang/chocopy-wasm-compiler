@@ -21,6 +21,6 @@ import { parse } from "./parser";
 
 var result = parse(`
 while True:
-  pass`);
+  pass`, 1);
 
 console.log(JSON.stringify(result, null, 4));

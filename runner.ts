@@ -10,6 +10,7 @@ import * as compiler from "./compiler";
 import { parse } from "./parser";
 import { GlobalTypeEnv, tc } from "./type-check";
 import { Value, Type, Location } from "./ast";
+import { importStackManager, StackManager } from "./stack"
 import { PyValue, NONE } from "./utils";
 import { ea } from "./ea";
 
@@ -18,6 +19,7 @@ export type Config = {
   env: compiler.GlobalEnv;
   typeEnv: GlobalTypeEnv;
   functions: string; // prelude functions
+  stackManager: StackManager;
 };
 
 // NOTE(joe): This is a hack to get the CLI Repl to run. WABT registers a global
@@ -48,9 +50,9 @@ export async function runWat(source: string, importObject: any): Promise<any> {
 
 export async function run(
   source: string,
-  config: Config
-): Promise<[Value, compiler.GlobalEnv, GlobalTypeEnv, string]> {
-  const parsed = parse(source);
+  config: Config // [x : int = 1]
+): Promise<[Value, compiler.GlobalEnv, GlobalTypeEnv, string, StackManager]> {
+  const parsed = parse(source, config.stackManager.source.length);
   console.log(parsed);
   const [tprogram, tenv] = tc(config.typeEnv, parsed);
   console.log(tprogram);
@@ -74,6 +76,8 @@ export async function run(
     const memory = new WebAssembly.Memory({ initial: 2000, maximum: 2000 });
     importObject.js = { memory: memory };
   }
+  config.stackManager.source.push(source);
+  config.stackManager.callStack = new Array();
 
   const view = new Int32Array(importObject.js.memory.buffer);
   let offsetBefore = view[0];
@@ -117,6 +121,11 @@ export async function run(
     (func $min (import "imports" "min") (param i32) (param i32) (result i32))
     (func $max (import "imports" "max") (param i32) (param i32) (result i32))
     (func $pow (import "imports" "pow") (param i32) (param i32) (result i32))
+
+    (func $$pushStack (import "imports" "pushStack") (param i32) (param i32) (param i32) (param i32))
+    (func $$popStack (import "imports" "popStack"))
+    (func $$checkStackOverFlow (import "imports" "checkStackOverFlow"))
+
     (func $range (param $start i32) (param $end i32) (param $sp i32) (result i32)
       (local $self i32)
       (local $$last i32)
@@ -182,5 +191,5 @@ export async function run(
   compiled.newEnv.offset = view[0] / 4;
 
   console.log("About to return", progTyp, result);
-  return [PyValue(progTyp, result, view), compiled.newEnv, tenv, compiled.functions];
+  return [PyValue(progTyp, result, view), compiled.newEnv, tenv, compiled.functions, config.stackManager];
 }

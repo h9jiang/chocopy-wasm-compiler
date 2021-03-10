@@ -49,13 +49,16 @@ export class InternalException extends Error {
 
 export class RuntimeError extends Error {
   __proto__: Error;
+  sources: Array<string>;
+  callStack: Array<Location>;
   // TODO - error-reporting
   // stacktrace for runtimeError
-  constructor(message?: string, name = "RuntimeError") {
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string, name = "RuntimeError") {
     const trueProto = new.target.prototype;
     super(message);
     this.name = name;
-
+    this.callStack = callStack;
+    this.sources = sources;
     // Alternatively use Object.setPrototypeOf if you have an ES6 environment.
     this.__proto__ = trueProto;
   }
@@ -77,28 +80,28 @@ export class CompileError extends Error {
 }
 
 export class StopIteration extends RuntimeError {
-  constructor(message?: string) {
-    super(message, "StopIteration");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string) {
+    super(sources, callStack, message, "StopIteration");
   }
 }
 
 export class ArithmeticError extends RuntimeError {
-  constructor(message?: string, name = "ArithmeticError") {
-    super(message, name);
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string, name = "ArithmeticError") {
+    super(sources, callStack, message, name);
   }
 }
 
 // e.g. math.exp(1000)
 export class OverflowError extends ArithmeticError {
-  constructor(message?: string) {
-    super(message, "OverflowError");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string) {
+    super(sources, callStack, message, "OverflowError");
   }
 }
 
 // e.g. 7/0
 export class ZeroDivisionError extends ArithmeticError {
-  constructor(message = "division by zero") {
-    super(message, "ZeroDivisionError");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message = "division by zero") {
+    super(sources, callStack, message, "ZeroDivisionError");
   }
 }
 
@@ -115,27 +118,27 @@ export class AttributeError extends CompileError {
 }
 
 export class LookupError extends RuntimeError {
-  constructor(message?: string, name = "LookupError") {
-    super(message, name);
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string, name = "LookupError") {
+    super(sources, callStack, message, name);
   }
 }
 
 // If an index is not an integer, TypeError is raised.
 export class IndexError extends LookupError {
-  constructor(message = "list index out of range") {
-    super(message, "IndexError");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message = "list index out of range") {
+    super(sources, callStack, message, "IndexError");
   }
 }
 
 export class KeyError extends LookupError {
-  constructor(keyName: string) {
-    super(`'${keyName}'`, "KeyError");
+  constructor(keyName: string, sources?: Array<string>, callStack?: Array<Location>) {
+    super(sources, callStack, `'${keyName}'`, "KeyError");
   }
 }
 
 export class MemoryError extends RuntimeError {
-  constructor(message?: string) {
-    super(message, "MemoryError");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string) {
+    super(sources, callStack, message, "MemoryError");
   }
 }
 
@@ -156,8 +159,8 @@ export class UnboundLocalError extends NameError {
 }
 
 export class RecursionError extends RuntimeError {
-  constructor() {
-    super("maximum recursion depth exceeded", "RecursionError");
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message = "maximum recursion depth exceeded") {
+    super(sources, callStack, message, "RecursionError");
   }
 }
 
@@ -244,14 +247,14 @@ export class ConditionTypeError extends TypeError {
 }
 
 export class ValueError extends RuntimeError {
-  constructor(message?: string, name = "ValueError") {
-    super(message, name);
+  constructor(sources?: Array<string>, callStack?: Array<Location>, message?: string, name = "ValueError") {
+    super(sources, callStack, message, name);
   }
 }
 
 export class UnicodeError extends ValueError {
-  constructor(codec: string, character: string, pos: number) {
-    super(
+  constructor(codec: string, character: string, pos: number, sources?: Array<string>, callStack?: Array<Location>) {
+    super(sources, callStack,
       `'${codec}' codec can't encode character '${character}' in position ${pos}`,
       "UnicodeError"
     );
@@ -270,3 +273,4 @@ function typeToString(typ: Type): string {
       return typ.tag;
   }
 }
+ 

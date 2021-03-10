@@ -26,8 +26,6 @@ export type GlobalEnv = {
   locals: Set<string>;
   offset: number;
   funs: Map<string, [number, Array<string>]>; // <function name, [tbl idx, Array of nonlocals]>
-  callableToIdx: Map<string, [number, number]>; // Callable name, [idx, start line]
-  idxToCallable: Array<string>;
 };
 
 export const emptyEnv: GlobalEnv = {
@@ -36,8 +34,6 @@ export const emptyEnv: GlobalEnv = {
   locals: new Set(),
   offset: 0,
   funs: new Map(),
-  callableToIdx: new Map([["main", [0, 0]]]),
-  idxToCallable: ["main"],
 };
 
 export const nTagBits = 1;
@@ -57,8 +53,6 @@ export function augmentEnv(env: GlobalEnv, prog: Program<[Type, Location]>): Glo
   const newGlobals = new Map(env.globals);
   const newClasses = new Map(env.classes);
   const newFuns = new Map(env.funs);
-  const newCallableToIdx = new Map(env.callableToIdx);
-  const newIdxToCallable = env.idxToCallable.map((x) => Object.assign({}, x));
 
   // set the referenced value to be num since we use i32 in wasm
   const RefMap = new Map<string, [number, Literal]>();
@@ -70,8 +64,6 @@ export function augmentEnv(env: GlobalEnv, prog: Program<[Type, Location]>): Glo
   let idx = newFuns.size;
   prog.closures.forEach((clo) => {
     newFuns.set(clo.name, [idx, clo.nonlocals]);
-    newCallableToIdx.set(clo.name, [newIdxToCallable.length, clo.a[1].line]);
-    newIdxToCallable.push(clo.name);
     idx += 1;
     if (clo.isGlobal) {
       newGlobals.set(clo.name, newOffset);
@@ -90,13 +82,6 @@ export function augmentEnv(env: GlobalEnv, prog: Program<[Type, Location]>): Glo
   prog.classes.forEach((cls) => {
     const classFields = new Map();
     cls.fields.forEach((field, i) => classFields.set(field.name, [i, field.value]));
-    cls.methods.forEach((method) => {
-      newCallableToIdx.set(`${cls.name}.${method.name}`, [
-        newIdxToCallable.length,
-        method.a[1].line,
-      ]);
-      newIdxToCallable.push(`${cls.name}.${method.name}`);
-    });
     newClasses.set(cls.name, classFields);
   });
 
@@ -106,8 +91,6 @@ export function augmentEnv(env: GlobalEnv, prog: Program<[Type, Location]>): Glo
     locals: env.locals,
     offset: newOffset,
     funs: newFuns,
-    callableToIdx: newCallableToIdx,
-    idxToCallable: newIdxToCallable,
   };
 }
 
@@ -917,10 +900,19 @@ function codeGenExpr(expr: Expr<[Type, Location]>, env: GlobalEnv): Array<string
           callExpr.push(codeGenExpr(arg, env).join("\n"));
         });
         callExpr.push(
+          `(i32.const ${expr.a[1].line})
+(i32.const ${expr.a[1].col})
+(i32.const ${expr.a[1].length})
+(i32.const ${expr.a[1].fileId})
+(call $$pushStack)
+(call $$checkStackOverFlow)`
+         );
+        callExpr.push(
           `(call_indirect (type $callType${
             expr.arguments.length + 1
           }) (i32.load (i32.load (i32.const ${envLookup(env, funName)}))))`
         );
+        callExpr.push(`(call $$popStack)`)
       } else if (nameExpr.tag == "lookup") {
         funName = (nameExpr.obj as any).name;
         callExpr.push(`(i32.load (local.get $${funName})) ;; argument for $fPTR`);
