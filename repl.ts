@@ -103,6 +103,8 @@ export class BasicREPL {
     this.currentTypeEnv = newTypeEnv;
     this.functions += newFunctions;
     this.errorManager = newErrorManager;
+
+    this.memoryManager.forceCollect();
     return result;
   }
   async tc(source: string): Promise<Type> {
