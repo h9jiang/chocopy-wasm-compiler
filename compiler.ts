@@ -1197,6 +1197,11 @@ function codeGenExpr(expr: Expr<[Type, Location]>, env: GlobalEnv): Array<string
         // until now, all the function variables are wrapped in references
         // the 'id's serves for global functions
         funName = nameExpr.name;
+        callExpr.push(
+          `(i32.load (i32.const ${
+            envLookup(env, funName)
+          })) (call $$check_none_callable)
+        `);
         callExpr.push(`(i32.load (i32.const ${envLookup(env, funName)})) ;; argument for $fPTR`);
         expr.arguments.forEach((arg) => {
           callExpr.push(...codeGenExpr(arg, env));
@@ -2475,10 +2480,10 @@ function codeGenRuntimeCheck(loc: Location, code: Array<string>, func: RunTime):
 
 function codeGenPushStack(loc: Location): Array<string> {
   return [
-    `(i32.const ${loc.line})`,
-    `(i32.const ${loc.col})`,
-    `(i32.const ${loc.length})`,
-    `(i32.const ${loc.fileId})`,
+    `(i32.const ${loc.line}) ;; line`,
+    `(i32.const ${loc.col}) ;; col`,
+    `(i32.const ${loc.length}) ;; length`,
+    `(i32.const ${loc.fileId}) ;; fileId`,
     "(call $$pushStack)",
   ];
 }

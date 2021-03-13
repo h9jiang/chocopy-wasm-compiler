@@ -72,6 +72,7 @@ export async function run(
   }
   // let globalsBefore = (config.env.globals as Map<string, number>).size;
   const eaProgram = ea(tprogram);
+  console.log("ea output: ", eaProgram);
   const compiled = compiler.compile(eaProgram, config.env, config.memoryManager);
   // let globalsAfter = compiled.newEnv.globals.size;
 
@@ -150,6 +151,7 @@ export async function run(
     (func $$pushStack (import "imports" "__pushStack") (param i32) (param i32) (param i32) (param i32))
     (func $$popStack (import "imports" "__popStack"))
     (func $$check_none_class (import "imports" "__checkNoneClass") (param i32))
+    (func $$check_none_callable (import "imports" "__checkNoneCallable") (param i32))
     (func $$check_index (import "imports" "__checkIndex") (param i32) (param i32))
     (func $$check_key (import "imports" "__checkKey") (param i32))
     (func $$check_none_lookup (import "imports" "__checkNoneLookup") (param i32))

@@ -177,14 +177,13 @@ export class TypeMismatchError extends TypeError {
     callStack: Array<Location>,
     expect: Type | Type[],
     got: Type | Type[],
-    name = "TypeMismatchError"
+    runtime = false,
+    name = "TypeMismatchError",
   ) {
     if (Array.isArray(expect)) {
       super(
         callStack,
-        `Expected type '${expect
-          .map((s) => typeToString(s))
-          .join(", ")}';  got type '${(got as Type[]).map((s) => typeToString(s)).join(", ")}'`,
+        `Expected type '${typeListToString(expect)}';  got type '${typeListToString(got as Type[])}'`,
         name
       );
       this.expect = expect;
@@ -192,7 +191,7 @@ export class TypeMismatchError extends TypeError {
     } else {
       super(
         callStack,
-        `Expected type '${typeToString(expect)}'; got type '${typeToString(got as Type)}'`,
+        `Expected type '${(expect.tag === "callable" && runtime) ? "Callable" : typeToString(expect)}'; got type '${typeToString(got as Type)}'`,
         name
       );
       this.expect = [expect];
@@ -262,10 +261,14 @@ export class UnicodeError extends ValueError {
   }
 }
 
+function typeListToString(list: Type[]) : string {
+  return `[${list.map(s => typeToString(s)).join(",")}]`;
+}
+
 function typeToString(typ: Type): string {
   switch (typ.tag) {
     case "callable":
-      return `[[${typ.args.toString()}], ${typ.ret}]`;
+      return `Callable[[${typeListToString(typ.args.map(s => s.type))}], ${typeToString(typ.ret)}]`;
     case "class":
       return typ.name;
     case "list":

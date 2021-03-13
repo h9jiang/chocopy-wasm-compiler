@@ -1,5 +1,6 @@
 import * as BaseException from "./error";
 import { Location } from "./ast";
+import { CALLABLE, NONE } from "./utils";
 
 export class ErrorManager {
   sources: Array<string>;
@@ -79,6 +80,11 @@ export class ErrorManager {
   __checkZeroDivision(key: number) {
     if (key == 0) throw new BaseException.ZeroDivisionError(this.callStack);
   }
+
+  __checkNoneCallable(arg: number) {
+    if (arg === 0)
+      throw new BaseException.TypeMismatchError(this.callStack, CALLABLE([], NONE), NONE, true);
+  }
 }
 
 export function importErrorManager(importObject: any, em: ErrorManager) {
@@ -109,6 +115,10 @@ export function importErrorManager(importObject: any, em: ErrorManager) {
   importObject.imports.__checkZeroDivision = (key: number) => {
     em.__checkZeroDivision(key);
   };
+
+  importObject.imports.__checkNoneCallable = (arg: number) => {
+    em.__checkNoneCallable(arg);
+  }
 }
 
 export enum RunTime {
